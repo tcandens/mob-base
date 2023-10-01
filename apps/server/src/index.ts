@@ -10,6 +10,9 @@ const app = fastify({
 app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
 
+void app.register(import('@fastify/autoload'));
+void app.register(import('@fastify/websocket'));
+
 app.get('/', (req, reply) => reply.send('Hello world!'));
 
 app.get('/api/:name', {
@@ -20,7 +23,7 @@ app.get('/api/:name', {
 	},
 }, (req, reply) => {
 	console.log(req.params);
-	return reply.send(`Fuck you, ${req.params.name}!`);
+	return reply.send(`Love you, ${req.params.name}!`);
 });
 
 app.listen({
