@@ -1,10 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
+  const [sock, setSock] = useState()
+
+  useEffect(() => {
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+    // const host = import.meta.env.SERVER_HOST ?? location.host
+    const s = new WebSocket(`${protocol}//${location.host}/api/sock`)
+    s.onopen = () => {
+      console.log('client opened')
+      s.send(JSON.stringify({type: 'join', room: 'test'}))
+    }
+  }, [])
+
 
   return (
     <>

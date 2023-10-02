@@ -15,6 +15,10 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: `http://localhost:${process.env.SERVER_PORT}`,
+      },
+      '/api/sock': {
+        ws: true,
+        target: `http://localhost:${process.env.SERVER_PORT}`,
       }
     }
   }

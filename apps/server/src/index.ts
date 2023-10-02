@@ -2,6 +2,7 @@ import fastify from 'fastify';
 import env from './env';
 import {serializerCompiler, validatorCompiler, type ZodTypeProvider} from 'fastify-type-provider-zod';
 import z from 'zod';
+import path from 'node:path';
 
 const app = fastify({
 	logger: true,
@@ -10,20 +11,14 @@ const app = fastify({
 app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
 
-void app.register(import('@fastify/autoload'));
 void app.register(import('@fastify/websocket'));
 
-app.get('/', (req, reply) => reply.send('Hello world!'));
-
-app.get('/api/:name', {
-	schema: {
-		params: z.object({
-			name: z.string(),
-		}),
+void app.register(import('@fastify/autoload'), {
+	dir: path.resolve(__dirname, './plugins'),
+	// Encapsulate: false,
+	options: {
+		prefix: '/api',
 	},
-}, (req, reply) => {
-	console.log(req.params);
-	return reply.send(`Love you, ${req.params.name}!`);
 });
 
 app.listen({

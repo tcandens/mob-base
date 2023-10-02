@@ -22,7 +22,7 @@ export function socketReply(socket: WebSocket, message: AppSocketReply) {
 }
 
 const websocketPlugin: FastifyPluginAsync = async (app, opt) => {
-	app.get('/', {websocket: true}, (conn, req) => {
+	app.get('/sock', {websocket: true}, (conn, req) => {
 		conn.socket.on('open', a => {
 			console.dir('opened', a);
 		});
@@ -36,8 +36,11 @@ const websocketPlugin: FastifyPluginAsync = async (app, opt) => {
 				});
 		});
 	});
+
+	// app.get('/sock', (req, reply) => reply.send({msg: 'Hello'}));
 };
 
 export default fp(websocketPlugin, {
 	dependencies: ['@fastify/websocket'],
+	encapsulate: true,
 });
