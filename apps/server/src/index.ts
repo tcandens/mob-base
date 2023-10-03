@@ -2,7 +2,6 @@ import fastify from 'fastify';
 import env from './env';
 import { randomUUID } from 'node:crypto'
 import {serializerCompiler, validatorCompiler, type ZodTypeProvider} from 'fastify-type-provider-zod';
-import z from 'zod';
 import path from 'node:path';
 
 const app = fastify({
@@ -27,8 +26,6 @@ void app.register(import('@fastify/secure-session'), {
     path: '/'
   }
 })
-void app.register(import('@fastify/websocket'));
-
 void app.register(import('@fastify/autoload'), {
 	dir: path.resolve(__dirname, './routes'),
 	options: {
