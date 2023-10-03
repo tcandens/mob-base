@@ -1,45 +1,42 @@
-import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState } from 'react'
 import './App.css'
+import { socket, useSocket, restartSocket } from '@/lib/socket'
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [sock, setSock] = useState()
+  const [users, setUsers] = useState([])
+  const [send] = useSocket(socket, {
+    open: () => {
+      send({ type: 'join', payload: { room: 1 }})
+    },
+    close: () => {
+      send({ type: 'leave', payload: { room: 1 }})
+    },
+    'room_state': (msg) => {
+      console.log('Joined!', msg)
+      setUsers(msg?.users)
+    },
+  })
 
-  useEffect(() => {
-    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-    // const host = import.meta.env.SERVER_HOST ?? location.host
-    const s = new WebSocket(`${protocol}//${location.host}/api/sock`)
-    s.onopen = () => {
-      console.log('client opened')
-      s.send(JSON.stringify({type: 'join', room: 'test'}))
-    }
-  }, [])
-
+  function login() {
+    fetch('/api/auth/login', {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then(res => {
+        restartSocket()
+        send({ type: 'join', payload: { room: 1 }})
+        console.log('res', res)
+      })
+  }
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
+      <button onClick={login}>
+        Login
+      </button>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+        {JSON.stringify(users)}
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }

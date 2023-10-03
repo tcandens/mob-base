@@ -31,6 +31,10 @@ module.exports = {
 			],
 			rules: {
 				'@typescript-eslint/naming-convention': 'off',
+				'@typescript-eslint/no-unsafe-assignment': ['warn', {
+					fixToUnknown: true,
+					ignoreRestArgs: true,
+				}],
 			},
 		},
 	],
@@ -42,7 +46,6 @@ module.exports = {
 		'react',
 	],
 	rules: {
-		'@typescript-eslint/naming-convention': 'off',
 		'capitalized-comments': 'off',
 	},
 };
