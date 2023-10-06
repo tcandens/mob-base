@@ -9,12 +9,12 @@ export const socket = io(sockUrl, {path: sockPath})
 
 // const SOCKET_SESSION_ID_KEY = 'socketSessionID'
 
-fetch('/api/session/id').then(res => res.json()).then(({ id }) => {
-  socket.auth = {
-    sessionID: id
-  }
-  socket.connect()
-})
+// fetch('/api/session/id').then(res => res.json()).then(({ id }) => {
+//   socket.auth = {
+//     sessionID: id
+//   }
+//   socket.connect()
+// })
 
 // socket.on('session', (msg) => {
 //   console.log('recieved session info', msg)

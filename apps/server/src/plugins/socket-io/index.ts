@@ -61,24 +61,32 @@ const socketIoPlugin: FastifyPluginAsync<Partial<ServerOptions>> = async (app, o
 
     }
 
-    socket.on('channel:join', async (msg) => {
-      const channelId = `channel:${msg.room}`
-      await socket.join(channelId)
-      const allsockets = sock.of(channelId).sockets
-      const ids = Array.from(allsockets.values()).map((s) => s.id)
-      sock.in(channelId).emit(`room_state:${msg.room}`, {
-        users: ids
-      })
+    // socket.on('channel:join', async (msg) => {
+    //   const channelId = `channel:${msg.room}`
+    //   await socket.join(channelId)
+    //   const allsockets = sock.of(channelId).sockets
+    //   const ids = Array.from(allsockets.values()).map((s) => s.id)
+    //   sock.in(channelId).emit(`room_state:${msg.room}`, {
+    //     users: ids
+    //   })
+    // })
+    //
+    // socket.on('channel:leave', async (msg) => {
+    //   const channelId = `channel:${msg.room}`
+    //   await socket.leave(channelId)
+    //   const allsockets = sock.of(channelId).sockets
+    //   const ids = Array.from(allsockets.values()).map((s) => s.id)
+    //   sock.in(channelId).emit(`room_state:${msg.room}`, {
+    //     users: ids,
+    //   })
+    // })
+
+    socket.on('action', async (action) => {
+      console.log('rec action:', action)
     })
 
-    socket.on('channel:leave', async (msg) => {
-      const channelId = `channel:${msg.room}`
-      await socket.leave(channelId)
-      const allsockets = sock.of(channelId).sockets
-      const ids = Array.from(allsockets.values()).map((s) => s.id)
-      sock.in(channelId).emit(`room_state:${msg.room}`, {
-        users: ids,
-      })
+    socket.on('patch', async (patch) => {
+      console.log('rec patch:', patch)
     })
   })
 }
