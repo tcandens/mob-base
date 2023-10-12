@@ -5,12 +5,14 @@
   "main": "index.js",
   "scripts": {
     "dev": "node --require ts-node/register --watch src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "./bin/migrate.ts"
   },
   "author": "Joey Thies",
   "license": "ISC",
   "devDependencies": {
     "@tsconfig/node20": "^20.1.2",
+    "@types/better-sqlite3": "^7.6.5",
     "@types/node": "^20.8.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
@@ -23,6 +25,7 @@
     "better-sqlite3": "^8.7.0",
     "fastify": "^4.23.2",
     "fastify-type-provider-zod": "^1.1.9",
+    "kysely": "^0.26.3",
     "mobx-state-tree": "^5.2.0",
     "socket.io": "^4.7.2",
     "ts-pattern": "^5.0.5",
