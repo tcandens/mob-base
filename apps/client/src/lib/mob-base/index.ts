@@ -1,10 +1,6 @@
 import { modelDatabase } from 'mob-base'
 
-// const sockProto = import.meta.env.SOCK_PROTO || location.protocol
-// const sockHost = import.meta.env.SOCK_HOST || location.hostname
-// const sockPort = import.meta.env.SOCK_PORT || location.port
 const sockPath = import.meta.env.SOCK_PATH || '/api/sock'
-// const sockUrl = `${sockProto}//${sockHost}:${sockPort}`
 
 const Database = modelDatabase((t, u) => {
   const users = u.entity({
@@ -25,8 +21,14 @@ export const db = Database.create({
   socket: {
     path: sockPath,
   },
+  meta: {
+    mode: 'persistent',
+  }
 })
 
-fetch('/api/session/id').then(res => res.json()).then(({ id }) => {
-  db.socket.connect({ sessionId: id })
-})
+globalThis.db = db
+
+
+// fetch('/api/session').then(res => res.json()).then(({ id }) => {
+//   // db.socket.connect({ sessionId: id })
+// })

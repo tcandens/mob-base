@@ -1,5 +1,7 @@
 import fp from 'fastify-plugin'
 import { Server, type ServerOptions } from 'socket.io'
+import { splitJsonPath } from '../../lib/utils'
+import { match } from 'ts-pattern'
 import {type FastifyPluginAsync} from 'fastify'
 
 declare module 'fastify' {
@@ -58,35 +60,23 @@ const socketIoPlugin: FastifyPluginAsync<Partial<ServerOptions>> = async (app, o
           userId: user?.id,
         })
       }
-
     }
 
-    // socket.on('channel:join', async (msg) => {
-    //   const channelId = `channel:${msg.room}`
-    //   await socket.join(channelId)
-    //   const allsockets = sock.of(channelId).sockets
-    //   const ids = Array.from(allsockets.values()).map((s) => s.id)
-    //   sock.in(channelId).emit(`room_state:${msg.room}`, {
-    //     users: ids
-    //   })
-    // })
-    //
-    // socket.on('channel:leave', async (msg) => {
-    //   const channelId = `channel:${msg.room}`
-    //   await socket.leave(channelId)
-    //   const allsockets = sock.of(channelId).sockets
-    //   const ids = Array.from(allsockets.values()).map((s) => s.id)
-    //   sock.in(channelId).emit(`room_state:${msg.room}`, {
-    //     users: ids,
-    //   })
-    // })
+    socket.on('sync:init', async (sync_msg) => {
+      console.log('initializing sync', sync_msg)
+    })
 
     socket.on('action', async (action) => {
-      console.log('rec action:', action)
     })
 
     socket.on('patch', async (patch) => {
-      console.log('rec patch:', patch)
+      match(patch)
+        .with({ op: 'add' }, (p) => {
+          console.log('we caught the add', p, socket.session?.id)
+        })
+        .otherwise((p) => {
+          console.log('unhandled patch', p)
+        })
     })
   })
 }

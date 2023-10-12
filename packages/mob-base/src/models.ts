@@ -1,8 +1,10 @@
 import { types } from 'mobx-state-tree'
-import type { IAnyModelType, Instance, IModelType, IAnyType } from 'mobx-state-tree'
 import { Socket } from './socket'
 import { sync } from './sync'
+import { persist } from './persist'
 import { ID } from './utils'
+import { nanoid } from 'nanoid'
+import type { IAnyModelType, Instance, IModelType, IAnyType } from 'mobx-state-tree'
 
 export const Entity = types.model({
   id: types.identifier,
@@ -35,12 +37,23 @@ function createTableFromEntity<P extends ModelProperties, A extends Object = {},
     .actions((self) => {
       return {
         create: (props: {[R in keyof P as Exclude<R, "id">]: Instance<P[R]>}) => {
-          console.log('props on create', props)
           const id = ID()
           self.entities.set(id, { ...props, id } as any)
         },
-        remove: (id: Instance<P['id']>) => {
+        delete: (id: Instance<P['id']>) => {
           self.entities.delete(id)
+        },
+        update: (id: Instance<P['id']>, props: {[R in keyof P as Exclude<R, "id">]: Instance<P[R]>}) => {
+          const prev = self.entities.get(id)
+          if (prev) {
+            self.entities.set(id, {...prev, ...props})
+          }
+        },
+        read: (id: Instance<P['id']>) => {
+          return self.entities.get(id)
+        },
+        query: (queryFn: (q: { where: any }) => typeof self.list) => {
+          return queryFn({ where: {} })
         }
       }
     })
@@ -51,10 +64,49 @@ function createTableFromEntity<P extends ModelProperties, A extends Object = {},
 export const GenericDatabase = types.model({
   tables: types.optional(types.map(Table), {}),
   socket: Socket,
-  meta: types.frozen({
-    version: types.number,
+  meta: types.optional(types.model({
+    nodeId: types.optional(types.string, () => nanoid()),
+    version: types.optional(types.number, 0),
+    mode: types.enumeration(['persistent', 'transient']),
+  }), {
+    nodeId: nanoid(),
+    version: 0,
+    mode: 'transient',
   })
 })
+  .volatile((self) => ({
+    status: self.meta.mode === 'persistent' ? 'pending' : 'ready',
+  }))
+  .views((self) => {
+    return {
+      get allEntitiesSorted() {
+        const entities = []
+        for (const table of Object.values(self.tables)) {
+          for (const entity of table.list) {
+            entities.push(entity)
+          }
+        }
+
+        entities.sort((a, z) => {
+          if (a.id < z.id) return -1
+          if (a.id > z.id) return 1
+        })
+
+        return entities
+      }
+    }
+  })
+  .actions((self) => ({
+    setStatus(val: 'ready' | 'pending') {
+      self.status = val
+    },
+    setMode(mode: 'persistent' | 'transient') {
+      self.meta.mode = mode
+    },
+    resetNodeId() {
+      self.meta.nodeId = nanoid()
+    }
+  }))
 
 const databaseBuilderUtils = {
   entity: modelEntity,
@@ -72,7 +124,6 @@ export function modelDatabase<T extends AnyModelTypeMap>(buildFn: DatabaseBuilde
   }, {})
 
   const TablesModel = types.model(tables as {[K in keyof T]: ReturnType<typeof createTableFromEntity<T[K]['properties']>>})
-  // return TablesModel
   const defaultTables = Object.keys(tables).reduce((acc, curr) => {
     acc[curr] = {entities: {}}
     return acc
@@ -82,11 +133,26 @@ export function modelDatabase<T extends AnyModelTypeMap>(buildFn: DatabaseBuilde
   })
 
   const ComposedDatabase = types.compose(GenericDatabase, DatabaseModel)
+    .named('MSTDatabase')
     .extend((self) => {
+      let persist_dispose: (() => void) | undefined
+
+      function setupSync() {
+        sync(self.socket.transport, self.tables)
+      }
+
       return {
         actions: {
           afterCreate() {
-            sync(self.socket.transport, self.tables)
+            if (self.meta.mode === 'persistent') {
+              persist(self)
+                .then((disposer) => {
+                  persist_dispose = disposer
+                  setupSync()
+                })
+            } else {
+              setupSync()
+            }
           }
         } 
       }

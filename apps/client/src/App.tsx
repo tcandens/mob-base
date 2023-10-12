@@ -12,7 +12,6 @@ const App = observer(function App() {
           const formdata = new FormData(e.target as HTMLFormElement)
           const name = formdata.get('name')
           if (name) {
-            console.log("name", name)
             db.tables.users.create({
               name: name.toString(),
             })
@@ -25,7 +24,16 @@ const App = observer(function App() {
           <button type="submit">+</button>
         </form>
         </div>
-        {JSON.stringify(db.tables.users.list)}
+        {db.tables.users.list.map((user) => {
+          return (
+            <div className="flex flex-row gap-5" key={user.id}>
+              <div>{user.name} / {user.id}</div>
+              <button onClick={() => {
+                db.tables.users.delete(user.id)
+              }}>X</button>
+            </div>
+          )
+        })}
       </div>
     </>
   )
