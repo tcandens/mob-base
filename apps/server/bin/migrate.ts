@@ -13,7 +13,7 @@ import {
 
 const root = path.join(__dirname, '../')
 const migrationDir = path.join(root, 'src/migrations')
-const databaseFilename = path.join(root, env.DATABASE_FILENAME)
+const databaseFilename = path.join(root, env.DATABASE_URL)
 const databaseDirectory = path.parse(databaseFilename).dir
 
 async function migrateToLatest() {
