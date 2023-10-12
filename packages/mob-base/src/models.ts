@@ -2,7 +2,7 @@ import { types } from 'mobx-state-tree'
 import { Socket } from './socket'
 import { sync } from './sync'
 import { persist } from './persist'
-import { ID } from './utils'
+// import { ID } from './utils'
 import { nanoid } from 'nanoid'
 import type { IAnyModelType, Instance, IModelType, IAnyType } from 'mobx-state-tree'
 
@@ -45,7 +45,7 @@ function createTableFromEntity<P extends EntityType & ModelProperties, A extends
     .actions((self) => {
       return {
         create: (props: {[R in keyof P as Exclude<R, "id">]: Instance<P[R]>}) => {
-          const id = ID()
+          const id = nanoid()
           self.entities.set(id, { ...props, id } as any)
         },
         delete: (id: Instance<P['id']>) => {
