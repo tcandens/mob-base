@@ -8,7 +8,12 @@ import type { IAnyModelType, Instance, IModelType, IAnyType } from 'mobx-state-t
 
 export const Entity = types.model({
   id: types.identifier,
+  updatedAt: types.optional(types.number, () => Date.now()),
 })
+  // .preProcessSnapshot((snap) => {
+  //   snap.updatedAt = Date.now()
+  //   return snap
+  // })
 
 export interface ModelProperties {
     [key: string]: IAnyType;
@@ -46,7 +51,7 @@ function createTableFromEntity<P extends ModelProperties, A extends Object = {},
         update: (id: Instance<P['id']>, props: {[R in keyof P as Exclude<R, "id">]: Instance<P[R]>}) => {
           const prev = self.entities.get(id)
           if (prev) {
-            self.entities.set(id, {...prev, ...props})
+            self.entities.set(id, {...prev, ...props, updatedAt: Date.now()})
           }
         },
         read: (id: Instance<P['id']>) => {
@@ -58,7 +63,7 @@ function createTableFromEntity<P extends ModelProperties, A extends Object = {},
       }
     })
 
-  return types.compose(Table, Building)
+  return types.compose(Table, Building).named(`${EntityModel.name}Table`)
 }
 
 export const GenericDatabase = types.model({
@@ -80,7 +85,7 @@ export const GenericDatabase = types.model({
   .views((self) => {
     return {
       get allEntitiesSorted() {
-        const entities = []
+        const entities = [] as Array<Instance<typeof Entity>>
         for (const table of Object.values(self.tables)) {
           for (const entity of table.list) {
             entities.push(entity)
@@ -88,8 +93,8 @@ export const GenericDatabase = types.model({
         }
 
         entities.sort((a, z) => {
-          if (a.id < z.id) return -1
-          if (a.id > z.id) return 1
+          if (a.updatedAt < z.updatedAt) return -1
+          if (a.updatedAt > z.updatedAt) return 1
         })
 
         return entities
@@ -119,7 +124,7 @@ export function modelDatabase<T extends AnyModelTypeMap>(buildFn: DatabaseBuilde
   const built = buildFn(types, databaseBuilderUtils)
   const tables = Object.keys(built).reduce((acc, curr) => {
     const entity = built[curr]
-    acc[curr] = createTableFromEntity(entity)
+    acc[curr] = createTableFromEntity(entity.named(curr))
     return acc
   }, {})
 

@@ -1,7 +1,9 @@
 import fp from 'fastify-plugin'
 import { Server, type ServerOptions } from 'socket.io'
 import { splitJsonPath } from '../../lib/utils'
-import { match } from 'ts-pattern'
+import { match, P } from 'ts-pattern'
+import snakeCase from 'lodash/snakeCase'
+import camelCase from 'lodash/camelCase'
 import {type FastifyPluginAsync} from 'fastify'
 
 declare module 'fastify' {
@@ -15,6 +17,11 @@ declare module 'socket.io' {
   interface Socket {
     session: Session<SessionData> | null
   }
+}
+
+type SyncInitMessage = {
+  lastUpdate: number
+  tables: string[]
 }
 
 const socketIoPlugin: FastifyPluginAsync<Partial<ServerOptions>> = async (app, opt) => {
@@ -62,17 +69,73 @@ const socketIoPlugin: FastifyPluginAsync<Partial<ServerOptions>> = async (app, o
       }
     }
 
-    socket.on('sync:init', async (sync_msg) => {
-      console.log('initializing sync', sync_msg)
+    socket.on('sync:init', async (sync_msg: SyncInitMessage) => {
+      match(sync_msg)
+        .with({ lastUpdate: 0, tables: P.when(t => t.length > 0) }, async (msg) => {
+          // get all entities from db
+
+          const entities = {} as Record<string, any>
+          for (const table of msg.tables) {
+            let tableEntities = await app.db.selectFrom(table as any).selectAll().execute()
+            entities[table] = tableEntities.reduce((acc, curr) => {
+              acc[curr.id] = Object.keys(curr).reduce((a, c) => {
+                a[camelCase(c)] = curr[c]
+                return a
+              }, {} as any)
+              return acc
+            }, {} as any)
+          }
+
+          socket.emit('sync:in', {
+            from: 0,
+            entities,
+          })
+
+        })
+        .with({ lastUpdate: P.number.positive() }, async (msg) => {
+          // look for the entities updated after the latest update
+          const entities = {} as Record<string, any>
+          for (const table of msg.tables) {
+            let tableEntities = await app.db.selectFrom(table as any).where(({ and, eb }) => {
+              return and([
+                eb('updated_at', '>=', msg.lastUpdate),
+              ])
+
+            }).selectAll().execute()
+            entities[table] = tableEntities.reduce((acc, curr) => {
+              acc[curr.id] = Object.keys(curr).reduce((a, c) => {
+                a[camelCase(c)] = curr[c]
+                return a
+              }, {} as any)
+              return acc
+            }, {} as any)
+          }
+
+          socket.emit('sync:in', {
+            from: msg.lastUpdate,
+            entities,
+          })
+        })
+        .with({ lastUpdate: P.number }, () => {
+          // 
+        })
+        .exhaustive()
     })
 
     socket.on('action', async (action) => {
     })
 
     socket.on('patch', async (patch) => {
-      match(patch)
-        .with({ op: 'add' }, (p) => {
-          console.log('we caught the add', p, socket.session?.id)
+      return match(patch)
+        .with({ op: 'add', path: P.string, value: P.shape({ id: P.string, updatedAt: P.number }) }, async (p) => {
+          const [table, _, id] = splitJsonPath(p.path)
+          const snakeCased = Object.keys(p.value).reduce((acc, curr) => {
+            const nk = snakeCase(curr)
+            acc[nk as keyof typeof p.value] = p.value[curr as keyof typeof p.value]
+            return acc
+          }, {} as unknown as any)
+          const added = await app.db.insertInto(table as any).values(snakeCased as any).returningAll().execute()
+          console.log('added', added)
         })
         .otherwise((p) => {
           console.log('unhandled patch', p)
@@ -83,5 +146,6 @@ const socketIoPlugin: FastifyPluginAsync<Partial<ServerOptions>> = async (app, o
 
 export default fp(socketIoPlugin, {
   name: '@app/socket-io',
+  dependencies: ['@app/db'],
   encapsulate: false,
 })

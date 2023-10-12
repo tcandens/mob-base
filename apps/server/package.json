@@ -7,13 +7,15 @@
     "dev": "node --require ts-node/register --watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "codegen": "kysely-codegen --url ./data/db.sqlite --out-file ./src/lib/db.d.ts",
-    "migrate": "./bin/migrate.ts"
+    "migrate": "./bin/migrate.ts && npm run codegen"
   },
   "author": "Joey Thies",
   "license": "ISC",
   "devDependencies": {
     "@tsconfig/node20": "^20.1.2",
     "@types/better-sqlite3": "^7.6.5",
+    "@types/lodash": "^4.14.199",
+    "@types/lodash-es": "^4.17.9",
     "@types/node": "^20.8.0",
     "kysely-codegen": "^0.10.1",
     "ts-node": "^10.9.1",
@@ -28,6 +30,7 @@
     "fastify": "^4.23.2",
     "fastify-type-provider-zod": "^1.1.9",
     "kysely": "^0.26.3",
+    "lodash": "^4.17.21",
     "mobx-state-tree": "^5.2.0",
     "socket.io": "^4.7.2",
     "ts-pattern": "^5.0.5",

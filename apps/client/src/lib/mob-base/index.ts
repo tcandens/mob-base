@@ -1,7 +1,5 @@
 import { modelDatabase } from 'mob-base'
 
-const sockPath = import.meta.env.SOCK_PATH || '/api/sock'
-
 const Database = modelDatabase((t, u) => {
   const users = u.entity({
     name: t.string,
@@ -19,7 +17,7 @@ const Database = modelDatabase((t, u) => {
 
 export const db = Database.create({
   socket: {
-    path: sockPath,
+    path: import.meta.env.SOCK_PATH,
   },
   meta: {
     mode: 'persistent',

@@ -14,5 +14,5 @@ const db_plugin: FastifyPluginAsync = async (app) => {
 
 export default fp(db_plugin, {
   name: '@app/db',
-  encapsulate: true,
+  encapsulate: false,
 })
