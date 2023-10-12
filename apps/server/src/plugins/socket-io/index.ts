@@ -82,5 +82,6 @@ const socketIoPlugin: FastifyPluginAsync<Partial<ServerOptions>> = async (app, o
 }
 
 export default fp(socketIoPlugin, {
+  name: '@app/socket-io',
   encapsulate: false,
 })

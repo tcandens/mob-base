@@ -27,17 +27,17 @@ void app.register(import('@fastify/secure-session'), {
   }
 })
 void app.register(import('@fastify/autoload'), {
-	dir: path.resolve(__dirname, './routes'),
-	options: {
-		prefix: '/api',
-	},
-})
-void app.register(import('@fastify/autoload'), {
 	dir: path.resolve(__dirname, './plugins'),
 	options: {
 		prefix: '/api',
 	},
 });
+void app.register(import('@fastify/autoload'), {
+	dir: path.resolve(__dirname, './routes'),
+	options: {
+		prefix: '/api',
+	},
+})
 
 void app.addHook('onRequest', (req, reply, done) => {
   const sessionId = req.session.get('id')
