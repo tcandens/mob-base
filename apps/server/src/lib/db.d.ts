@@ -9,6 +9,7 @@ export interface Programs {
   name: string | null;
   created_at: Generated<number | null>;
   updated_at: Generated<number | null>;
+  tombstoned: Generated<number | null>;
 }
 
 export interface Users {
@@ -16,6 +17,7 @@ export interface Users {
   name: string | null;
   created_at: Generated<number>;
   updated_at: Generated<number | null>;
+  tombstoned: Generated<number | null>;
 }
 
 export interface DB {

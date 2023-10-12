@@ -9,6 +9,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.defaultTo(sql`CURRENT_TIMESTAMP`).notNull()
     )
     .addColumn('updated_at', 'numeric', (col) => col.defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn('tombstoned', 'boolean', (col) => col.defaultTo(false))
     .execute()
 
   await db.schema
@@ -17,6 +18,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('name', 'text')
     .addColumn('created_at', 'numeric', (col) => col.defaultTo(sql`CURRENT_TIMESTAMP`))
     .addColumn('updated_at', 'numeric', (col) => col.defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn('tombstoned', 'boolean', (col) => col.defaultTo(false))
     .execute()
 }
 

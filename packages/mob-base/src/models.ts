@@ -9,6 +9,7 @@ import type { IAnyModelType, Instance, IModelType, IAnyType } from 'mobx-state-t
 export const Entity = types.model({
   id: types.identifier,
   updatedAt: types.optional(types.number, () => Date.now()),
+  tombstoned: types.optional(types.boolean, false),
 })
   // .preProcessSnapshot((snap) => {
   //   snap.updatedAt = Date.now()
@@ -28,14 +29,16 @@ export const Table = types.model({
   entities: types.map(Entity),
 })
 
-function createTableFromEntity<P extends ModelProperties, A extends Object = {}, S extends Object = {}, O extends Object = {}>(EntityModel: IModelType<P, A, S, O>) {
+type EntityType = Instance<typeof Entity>
+
+function createTableFromEntity<P extends EntityType & ModelProperties, A extends Object = {}, S extends Object = {}, O extends Object = {}>(EntityModel: IModelType<P, A, S, O>) {
   const Building = types.model({
     entities: types.map(EntityModel)
   })
     .views((self) => {
       return {
         get list() {
-          return Array.from(self.entities.values())
+          return Array.from(self.entities.values()).filter(e => !e.tombstoned)
         }
       }
     })
@@ -46,7 +49,14 @@ function createTableFromEntity<P extends ModelProperties, A extends Object = {},
           self.entities.set(id, { ...props, id } as any)
         },
         delete: (id: Instance<P['id']>) => {
-          self.entities.delete(id)
+          const prev = self.entities.get(id)
+          if (prev) {
+            self.entities.set(id, {
+              ...prev,
+              tombstoned: true,
+              updatedAt: Date.now(),
+            })
+          }
         },
         update: (id: Instance<P['id']>, props: {[R in keyof P as Exclude<R, "id">]: Instance<P[R]>}) => {
           const prev = self.entities.get(id)
@@ -87,7 +97,8 @@ export const GenericDatabase = types.model({
       get allEntitiesSorted() {
         const entities = [] as Array<Instance<typeof Entity>>
         for (const table of Object.values(self.tables)) {
-          for (const entity of table.list) {
+          // make sure we include all entities and not the list view filtering tombstoned
+          for (const entity of table.entities.values()) {
             entities.push(entity)
           }
         }

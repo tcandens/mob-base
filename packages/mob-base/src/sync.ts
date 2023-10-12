@@ -7,7 +7,11 @@ export function sync<T extends IMSTMap<typeof Table>>(socket: MobBaseSocket, nod
 
   const root = getParent(node) as Instance<typeof GenericDatabase>
 
-  const lastEntity = root.allEntitiesSorted.at(0)
+  const allEntitiesSorted = root.allEntitiesSorted
+  const lastEntity = allEntitiesSorted.at(-1)
+  console.log('lastEntity', lastEntity, allEntitiesSorted)
+
+  socket.connect()
 
   socket.emit('sync:init', {
     lastUpdate: lastEntity ? lastEntity.updatedAt : 0,
@@ -19,10 +23,19 @@ export function sync<T extends IMSTMap<typeof Table>>(socket: MobBaseSocket, nod
     for (const [table, items] of Object.entries(data.entities)) {
       const count = Object.keys(items).length
       if (count) {
-        const existing = node[table]['entities']
+        // turn off patch emission
+        root.setStatus('pending')
+        const existing = node[table]['entities'].toJSON()
+        console.log('syncing in entities!', data.entities[table])
         unprotect(root)
-        node[table]['entities'] = data.entities[table]
+        const next = {
+          ...existing, 
+          ...data.entities[table]
+        }
+        node[table]['entities'] = next
         protect(root)
+        // turn on patch emission
+        root.setStatus('ready')
       } else {
         console.log('nothing', items, table)
       }
@@ -32,6 +45,7 @@ export function sync<T extends IMSTMap<typeof Table>>(socket: MobBaseSocket, nod
   })
 
   onPatch(node, (patch) => {
+    if (root.status !== 'ready') return
     socket.emit('patch', patch)
   })
   onAction(node, (action) => {
