@@ -12,15 +12,19 @@ declare module '@fastify/secure-session' {
   }
 }
 
+const signupSchema = z.object({
+  email: z.string(),
+  password: z.string()
+})
+
+const loginSchema = signupSchema.extend({})
+
 const authPlugin: FastifyPluginAsync = async (app) => {
 
   app.withTypeProvider<ZodTypeProvider>()
     .post('/signup', {
       schema: {
-        body: z.object({
-          email: z.string(),
-          password: z.string()
-        })
+        body: signupSchema,
       }
     }, async (req, reply) => {
       req.session.set('user', {
@@ -30,10 +34,7 @@ const authPlugin: FastifyPluginAsync = async (app) => {
     }) 
     .post('/login', {
       schema: {
-        body: z.object({
-          email: z.string(),
-          password: z.string(),
-        })
+        body: loginSchema,
       }
     }, async (req, reply) => {
       req.session.set('user', {

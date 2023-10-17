@@ -19,7 +19,6 @@
     "nanoid": "^5.0.1",
     "socket.io-client": "^4.7.2",
     "ts-pattern": "^5.0.5",
-    "ui7": "^0.2.3",
     "uuidv7": "^0.6.3"
   }
 }

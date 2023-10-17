@@ -1,55 +1,79 @@
 import { MobBaseSocket } from './socket'
-import { onPatch, onAction, getParent, getType, getChildType, unprotect, protect } from 'mobx-state-tree'
+import { types, onPatch, applySnapshot, applyPatch, onAction, onSnapshot, getParent, unprotect, protect } from 'mobx-state-tree'
 import { GenericDatabase, Table } from './models'
-import type { IMSTMap, Instance } from 'mobx-state-tree'
+import { uuidv7 } from 'uuidv7'
+import { storage } from './persist'
+import { MerkleTrie } from './merkle'
+import type { IMSTMap, Instance, IJsonPatch, SnapshotOut } from 'mobx-state-tree'
 
-export function sync<T extends IMSTMap<typeof Table>>(socket: MobBaseSocket, node: T) {
+interface IPatch extends IJsonPatch {
+  id: string
+}
 
-  const root = getParent(node) as Instance<typeof GenericDatabase>
-
-  const allEntitiesSorted = root.allEntitiesSorted
-  const lastEntity = allEntitiesSorted.at(-1)
-  console.log('lastEntity', lastEntity, allEntitiesSorted)
-
-  socket.connect()
-
-  socket.emit('sync:init', {
-    lastUpdate: lastEntity ? lastEntity.updatedAt : 0,
-    tables: Object.keys(root.tables),
+const PatchStore = types.model({
+  patches: types.array(types.frozen<IPatch>()),
+})
+  .volatile((self) => ({
+    merkle: new MerkleTrie(self.patches),
+  }))
+  .actions((self) => {
+    return {
+      insert(patch: IJsonPatch) {
+        const patchOut = Object.assign({}, patch, {
+          id: uuidv7(),
+        })
+        self.patches.push(patchOut)
+        self.merkle.insert(patch)
+      }
+    }
+  })
+  .views((self) => {
+    return {
+      get hash() {
+        return self.merkle.root?.hash
+      },
+      get lastPatchId() {
+        return self.patches[self.patches.length - 1]?.id
+      }
+    }
   })
 
+export function sync<T extends IMSTMap<typeof Table>>(socket: MobBaseSocket, node: T) {
+  socket.connect()
 
-  socket.on('sync:in', (data) => {
-    for (const [table, items] of Object.entries(data.entities)) {
-      const count = Object.keys(items).length
-      if (count) {
-        // turn off patch emission
-        root.setStatus('pending')
-        const existing = node[table]['entities'].toJSON()
-        console.log('syncing in entities!', data.entities[table])
-        unprotect(root)
-        const next = {
-          ...existing, 
-          ...data.entities[table]
-        }
-        node[table]['entities'] = next
-        protect(root)
-        // turn on patch emission
-        root.setStatus('ready')
-      } else {
-        console.log('nothing', items, table)
+  const root = getParent(node) as Instance<typeof GenericDatabase>
+  const patchStore = PatchStore.create()
+
+  storage.getItem<SnapshotOut<typeof PatchStore> | undefined>('patches', (err, value) => {
+    if (err) console.error(err)
+
+    if (value) {
+      applySnapshot(patchStore, value)
+    }
+
+    socket.emit('sync:pull', {
+      lastPatchId: patchStore.lastPatchId,
+      hash: patchStore.merkle.root?.hash,
+    })
+  })
+
+  socket.on('sync:push', (data) => {
+    if (Array.isArray(data.patches) && data.patches.length > 0) {
+      root.setStatus('pending')
+      for (let i = 0; i < data.patches.length; i++) {
+        const patch = data.patches[i]
+        applyPatch(node, patch)
       }
-      // if (data.entities[table]) {
-      // }
+      root.setStatus('pending')
     }
   })
 
   onPatch(node, (patch) => {
+    patchStore.insert(patch)
+
     if (root.status !== 'ready') return
-    socket.emit('patch', patch)
+    socket.emit('patch:out', patch)
   })
-  onAction(node, (action) => {
-    socket.emit('action', action)
-  })
+
 }
 

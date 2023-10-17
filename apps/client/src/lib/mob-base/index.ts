@@ -1,19 +1,18 @@
-import { modelDatabase } from 'mob-base'
+import { modelDatabase, modelEntity, types } from 'mob-base'
 
-const Database = modelDatabase((t, u) => {
-  const users = u.entity({
-    name: t.string,
-  })
-  const programs = u.entity({
-    name: t.string,
-    userId: t.reference(users)
-  })
-
-  return {
-    users,
-    programs,
-  }
+const users = modelEntity({
+  name: types.string,
 })
+
+const programs = modelEntity({
+  name: types.string,
+  userId: types.reference(users),
+})
+
+const Database = modelDatabase(() => ({
+  users,
+  programs,
+}))
 
 export const db = Database.create({
   socket: {
@@ -25,7 +24,6 @@ export const db = Database.create({
 })
 
 globalThis.db = db
-
 
 // fetch('/api/session').then(res => res.json()).then(({ id }) => {
 //   // db.socket.connect({ sessionId: id })

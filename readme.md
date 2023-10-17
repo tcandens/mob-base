@@ -14,3 +14,10 @@
     c. the server tracks the timestamp of the last processed patch / transaction.
         cc. if the patch sent is before the last processed patch, nothing happens.
 
+# Todo
+1. Persist a store of all patches on the frontend.
+2. Persist a merkle hash of all the patches on the frontend.
+3. Treat the merkle hash as a checkpoint for the patches.
+4. We calculate the merkle hash from a sorted list of patches and any other previous merkle hash.
+5. Send all patches and merkle hash to the server to check if merkle hash matches.
+6. If hashes match then send a response to the browser which triggers a consolidation of patches into a single merkle hash.

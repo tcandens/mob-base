@@ -2,7 +2,6 @@ import { types } from 'mobx-state-tree'
 import { Socket } from './socket'
 import { sync } from './sync'
 import { persist } from './persist'
-// import { ID } from './utils'
 import { nanoid } from 'nanoid'
 import type { IAnyModelType, Instance, IModelType, IAnyType } from 'mobx-state-tree'
 
@@ -11,16 +10,12 @@ export const Entity = types.model({
   updatedAt: types.optional(types.number, () => Date.now()),
   tombstoned: types.optional(types.boolean, false),
 })
-  // .preProcessSnapshot((snap) => {
-  //   snap.updatedAt = Date.now()
-  //   return snap
-  // })
 
 export interface ModelProperties {
     [key: string]: IAnyType;
 }
 
-function modelEntity<P extends ModelProperties>(props: P) {
+export function modelEntity<P extends ModelProperties>(props: P) {
   const Inter = types.model(props)
   return types.compose(Inter, Entity)
 }
