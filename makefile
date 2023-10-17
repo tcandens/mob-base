@@ -1,7 +1,13 @@
-.PHONY: dev migrate
+.PHONY: dev_client dev_server dev migrate
+
+dev_client:
+	npm -w @app/client run dev
+
+dev_server:
+	(cd apps/phx && iex -S mix phx.server)
 
 dev:
-	npm run dev -w @app/server & npm run dev -w @app/client & wait
+	make dev_client & make dev_server & wait
 
 migrate:
-	npm -w @app/server run migrate
+	(cd apps/phx && mix ecto.migrate)

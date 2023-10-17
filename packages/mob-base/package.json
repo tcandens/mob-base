@@ -20,5 +20,8 @@
     "socket.io-client": "^4.7.2",
     "ts-pattern": "^5.0.5",
     "uuidv7": "^0.6.3"
+  },
+  "devDependencies": {
+    "phoenix": "^1.7.9"
   }
 }
