@@ -1,7 +1,43 @@
 import { types } from 'mobx-state-tree'
+import { Socket as PhoenixSocket, type Channel } from 'phoenix'
 import { io, Socket as IoSocket, type SocketOptions, type ManagerOptions } from 'socket.io-client'
 
-export class MobBaseSocket {
+export interface IMobBaseTransport {
+  connect: (auth?: { sessionId: string }) => void
+  disconnect: () => void
+  emit: (eventName: string, payload: any) => void
+  on: (eventName: string, callback: (message: any) => void) => void
+}
+
+const sock = new PhoenixSocket('ws://localhost:4000/socket')
+sock.connect()
+
+export class MobBaseChannelSocket implements IMobBaseTransport {
+  transport: Channel
+  constructor({ baseSocket, sessionId }: { baseSocket: PhoenixSocket, sessionId: string }) {
+    if (!sessionId) {
+      // throw new Error('sessionId is required')
+    }
+    this.transport = (baseSocket || sock).channel(`sync:${sessionId}`)
+
+    return this
+  }
+  connect(_auth?: { sessionId: string }) {
+    console.log('calling connect')
+    this.transport.join()
+  }
+  disconnect() {
+    this.transport.leave()
+  }
+  emit(eventName: string, payload: any) {
+    this.transport.push(eventName, payload)
+  }
+  on(eventName: string, callback: (message: any) => void) {
+    this.transport.on(eventName, callback)
+  }
+}
+
+export class MobBaseSocket implements IMobBaseTransport {
   transport: IoSocket
   constructor(opt?: Partial<SocketOptions & ManagerOptions>) {
 
@@ -32,10 +68,12 @@ export const Socket = types.model({
   sessionId: types.maybe(types.string),
 })
   .volatile((self) => {
+    console.log('setting volitile state')
     return {
-      transport: new MobBaseSocket({
-        path: self.path,
-      })
+      transport: new MobBaseChannelSocket({ baseSocket: sock, sessionId: self.sessionId }),
+      // transport: new MobBaseSocket({
+      //   path: self.path,
+      // })
     }
   })
   .actions((self) => ({

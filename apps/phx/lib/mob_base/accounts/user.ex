@@ -8,6 +8,9 @@ defmodule MobBase.Accounts.User do
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
 
+    has_many :patches, MobBase.SyncService.Patch
+    has_many :checkpoints, MobBase.SyncService.Checkpoint
+
     timestamps(type: :utc_datetime)
   end
 

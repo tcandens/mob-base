@@ -17,6 +17,7 @@ const Database = modelDatabase(() => ({
 export const db = Database.create({
   socket: {
     path: import.meta.env.SOCK_PATH,
+    sessionId: '00001'
   },
   meta: {
     mode: 'persistent',
