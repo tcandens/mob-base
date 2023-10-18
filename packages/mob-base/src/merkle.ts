@@ -1,17 +1,14 @@
-import murmurhash from '@emotion/hash'
+// import murmurhash from 'murmur-32'
+import { murmurHash as murmurhash } from 'ohash'
 
 export class MerkleNode {
   left: MerkleNode
   right: MerkleNode
-  hash: string
+  hash: string | number
   constructor(left?: MerkleNode, right?: MerkleNode, hash?: string) {
     this.left = left
     this.right = right
-    if (left && right) {
-      this.hash = hash || murmurhash(left.hash + right.hash)
-    } else {
-      this.hash = null
-    }
+    this.hash = hash || murmurhash(String(left.hash) + String(right.hash))
   }
 
   static leaf(hash: string | unknown) {
@@ -52,7 +49,7 @@ export class MerkleTrie {
       nodes.push(node)
     }
 
-    this.root = nodes[0] ?? new MerkleNode()
+    return this.build(nodes)
   }
 
   insert(value: unknown) {

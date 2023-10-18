@@ -13,10 +13,7 @@ export default defineConfig({
   server: {
     port: Number(process.env.CLIENT_PORT) ?? 3000,
     proxy: {
-      '/api': {
-        target: `http://localhost:${process.env.SERVER_PORT}`,
-      },
-      '/api/sock': {
+      '/socket': {
         ws: true,
         target: `http://localhost:${process.env.SERVER_PORT}`,
       }
