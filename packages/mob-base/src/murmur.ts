@@ -58,7 +58,7 @@ function swapBytes(n: bigint, p: bigint, t = 8): bigint {
   }
 }
 
-function murmur(key: string) {
+export function murmur(key: string) {
   const buffer = new TextEncoder().encode(key);
 
   let idx = 0
@@ -122,5 +122,4 @@ function xorbsr(h: bigint, v: bigint) {
   return (h ^ (h >> v))
 }
 
-console.log('ts', murmur("hello"))
 

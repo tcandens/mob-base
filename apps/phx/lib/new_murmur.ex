@@ -170,6 +170,3 @@ defmodule NewMurmur do
   defp xorbsr(h, v), do: h |> bxor(h >>> v)
 
 end
-
-h = NewMurmur.murmur3("hello")
-IO.inspect(h, binaries: :as_binaries)
